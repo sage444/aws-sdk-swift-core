@@ -60,6 +60,10 @@ extension Signers {
                 URLQueryItem(name: "X-Amz-SignedHeaders", value: "host"),
             ]
 
+            if let sessionToken = credentialForSignature.sessionToken {
+                queries.append(URLQueryItem(name: "X-Amz-Security-Token", value: sessionToken))
+            }
+
             url.query?.components(separatedBy: "&").forEach {
                 var q = $0.components(separatedBy: "=")
                 if q.count == 2 {
@@ -270,6 +274,15 @@ extension Signers {
 
 extension Collection where Iterator.Element == URLQueryItem {
     var asStringForURL: String {
-        return self.compactMap({ "\($0.name)=\($0.value ?? "")" }).joined(separator: "&")
+        return self.compactMap({
+            if let value = $0.value {
+                if $0.name == "X-Amz-Credential" {
+                    return "\($0.name)=\(value)"
+                }
+                return "\($0.name)=\(Signers.V4.awsUriEncode(value))"
+            } else {
+                return "\($0.name)=\"\")"
+            }
+          }).joined(separator: "&")
     }
 }

@@ -331,11 +331,13 @@ extension AWSClient {
             }
 
         case .restxml:
-            if let payload = Input.payloadPath, let payloadBody = mirror.getAttribute(forKey: payload.toSwiftVariableCase()) {
-                body = Body(anyValue: payloadBody)
-                headers.removeValue(forKey: payload.toSwiftVariableCase())
-            } else {
-                body = .xml(try AWSShapeEncoder().encodeToXMLNode(input))
+            if httpMethod.lowercased() == "post" {
+                if let payload = Input.payloadPath, let payloadBody = mirror.getAttribute(forKey: payload.toSwiftVariableCase()) {
+                    body = Body(anyValue: payloadBody)
+                    headers.removeValue(forKey: payload.toSwiftVariableCase())
+                } else {
+                    body = .xml(try AWSShapeEncoder().encodeToXMLNode(input))
+                }
             }
 
         case .other(let proto):
@@ -452,7 +454,12 @@ extension AWSClient {
         }
 
         if payloadPath != nil {
-            return .buffer(data)
+            switch serviceProtocol.type {
+            case .restxml:
+                break
+            default:
+                return .buffer(data)
+            }
         }
 
         switch serviceProtocol.type {
@@ -511,7 +518,13 @@ extension AWSClient {
 
         case .restxml, .query:
             let xmlNode = try XML2Parser(data: data).parse()
-            responseBody = .xml(xmlNode)
+            if let path = payloadPath {
+                let parent = XMLNode(elementName: path)
+                parent.children.append(xmlNode)
+                responseBody = .xml(parent)
+            } else {
+                responseBody = .xml(xmlNode)
+            }
 
         case .other(let proto):
             switch proto.lowercased() {
