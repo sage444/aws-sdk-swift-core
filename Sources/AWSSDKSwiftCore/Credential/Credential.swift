@@ -67,9 +67,9 @@ public struct SharedCredential: CredentialProvider {
     public let sessionToken: String?
     public let expiration: Date? = nil
 
-    public init(filename: String = "~/.aws/credentials",
-                profile: String = "default") throws {
-        try self.init(
+    public init?(filename: String = "~/.aws/credentials",
+                profile: String = "default") {
+        try? self.init(
             filename: filename,
             profile: profile,
             parser: IniConfigParser()
@@ -95,6 +95,28 @@ public struct SharedCredential: CredentialProvider {
     }
 }
 
+public struct RuntimeCredentials: CredentialProvider {
+    private static var _creds: CredentialProvider?
+    public static func set(creds: CredentialProvider?) {
+        _creds = creds
+    }
+    
+    public let accessKeyId: String
+    public let secretAccessKey: String
+    public let sessionToken: String?
+    public let expiration: Date?
+    
+    public init?() {
+        guard let creds = RuntimeCredentials._creds else {
+            return nil
+        }
+        self.accessKeyId = creds.accessKeyId
+        self.secretAccessKey =  creds.secretAccessKey
+        self.sessionToken =  creds.sessionToken
+        self.expiration = creds.expiration
+    }
+}
+
 public struct Credential: CredentialProvider {
     public let accessKeyId: String
     public let secretAccessKey: String
@@ -109,13 +131,13 @@ public struct Credential: CredentialProvider {
     }
 }
 
-struct EnvironementCredential: CredentialProvider {
-    let accessKeyId: String
-    let secretAccessKey: String
-    let sessionToken: String?
-    let expiration: Date? = nil
+public struct EnvironementCredential: CredentialProvider {
+    public let accessKeyId: String
+    public let secretAccessKey: String
+    public let sessionToken: String?
+    public let expiration: Date? = nil
 
-    init?() {
+    public init?() {
         guard let accessKeyId = ProcessInfo.processInfo.environment["AWS_ACCESS_KEY_ID"] else {
             return nil
         }

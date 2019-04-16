@@ -63,17 +63,9 @@ public struct AWSClient {
         return "\(signer.service).\(signer.region.rawValue).amazonaws.com"
     }
 
-    public init(accessKeyId: String? = nil, secretAccessKey: String? = nil, region givenRegion: Region?, amzTarget: String? = nil, service: String, serviceProtocol: ServiceProtocol, apiVersion: String, endpoint: String? = nil, serviceEndpoints: [String: String] = [:], partitionEndpoint: String? = nil, middlewares: [AWSRequestMiddleware] = [], possibleErrorTypes: [AWSErrorType.Type]? = nil) {
-        let credential: CredentialProvider
-        if let accessKey = accessKeyId, let secretKey = secretAccessKey {
-            credential = Credential(accessKeyId: accessKey, secretAccessKey: secretKey)
-        } else if let ecredential = EnvironementCredential() {
-            credential = ecredential
-        } else if let scredential = try? SharedCredential() {
-            credential = scredential
-        } else {
-            credential = Credential(accessKeyId: "", secretAccessKey: "")
-        }
+    public init(accessKeyId: String? = nil, secretAccessKey: String? = nil, region givenRegion: Region?, amzTarget: String? = nil, service: String, serviceProtocol: ServiceProtocol, apiVersion: String, endpoint: String? = nil, serviceEndpoints: [String: String] = [:], partitionEndpoint: String? = nil, middlewares: [AWSRequestMiddleware] = [], possibleErrorTypes: [AWSErrorType.Type]? = nil, credetialProviders: [CredentialProvider?] = [SharedCredential(), EnvironementCredential(), RuntimeCredentials()]) {
+        
+        let credential = credetialProviders.compactMap({ return $0 }).first
 
         let region: Region
         if let _region = givenRegion {
@@ -102,6 +94,7 @@ public struct AWSClient {
 // invoker
 extension AWSClient {
     fileprivate func invoke(_ nioRequest: Request) throws -> Response {
+        print("<<< \(nioRequest)")
         let client = HTTPClient(hostname: nioRequest.head.headers["Host"].first!, port: 443)
         let future = try client.connect(nioRequest)
 
@@ -180,8 +173,11 @@ extension AWSClient {
             let signedURI = signer.signedURL(url: unsignedUrl)
             nioRequest.head.uri = signedURI.absoluteString
             nioRequest.head.headers.replaceOrAdd(name: "Host", value: unsignedUrl.hostWithPort!)
+//            if let token = signer.credential?.sessionToken {
+//                nioRequest.head.headers.replaceOrAdd(name: "X-Amz-Security-Token", value: token)
+//            }
         }
-        return nioRequest
+        return try nioRequestWithSignedHeader(nioRequest)
     }
 
     func createNIORequestWithSignedHeader(_ request: AWSRequest) throws -> Request {
@@ -477,13 +473,15 @@ extension AWSClient {
         }
 
         for (key, value) in response.head.headers {
-            if let index = Output.headerParams.index(where: { $0.key.lowercased() == key.description.lowercased() }) {
+            let headeParams = Output.headerParams
+            if let index = headeParams.index(where: { $0.key.lowercased() == key.description.lowercased() }) {
+                let outDicKey = headeParams[index].key
                 if let number = Double(value) {
-                    outputDict[Output.headerParams[index].key] = number.truncatingRemainder(dividingBy: 1) == 0 ? Int(number) : number
+                    outputDict[outDicKey] = number.truncatingRemainder(dividingBy: 1) == 0 ? Int(number) : number
                 } else if let boolean = Bool(value) {
-                    outputDict[Output.headerParams[index].key] = boolean
+                    outputDict[outDicKey] = boolean
                 } else {
-                    outputDict[Output.headerParams[index].key] = value
+                    outputDict[outDicKey] = value
                 }
             }
         }

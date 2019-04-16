@@ -51,8 +51,14 @@ private class HTTPClientResponseHandler: ChannelInboundHandler {
     public init(promise: EventLoopPromise<Response>) {
         self.promise = promise
     }
-
+    
     func errorCaught(ctx: ChannelHandlerContext, error: Error) {
+        if case HTTPParserError.invalidEOFState = error, // case for HEAD request
+            case let HTTPClientState.parsingBody(head, body) = state {
+            // there we have only headers and EOF in place of body
+            success(context: ctx, head: head, body: body)
+            return
+        }
         promise.fail(error: HTTPClientError.error(error))
         ctx.fireErrorCaught(error)
     }
@@ -61,7 +67,10 @@ private class HTTPClientResponseHandler: ChannelInboundHandler {
         switch unwrapInboundIn(data) {
         case .head(let head):
             switch state {
-            case .ready: state = .parsingBody(head, nil)
+            case .ready:
+                state = .parsingBody(head, nil)
+                print("head >>> [\(head)]")
+                
             case .parsingBody: promise.fail(error: HTTPClientError.malformedHead)
             }
         case .body(var body):
@@ -82,14 +91,21 @@ private class HTTPClientResponseHandler: ChannelInboundHandler {
             switch state {
             case .ready: promise.fail(error: HTTPClientError.malformedHead)
             case .parsingBody(let head, let data):
-                let res = Response(head: head, body: data ?? Data())
-                if ctx.channel.isActive {
-                    ctx.fireChannelRead(wrapOutboundOut(res))
+                success(context: ctx, head: head, body: data)
+                if let bodyString = String(data:data ?? Data(), encoding: .utf8) {
+                    print("body >>> [\(bodyString)]")
                 }
-                promise.succeed(result: res)
-                state = .ready
             }
         }
+    }
+    
+    private func success(context: ChannelHandlerContext, head: HTTPResponseHead, body: Data?) {
+        let res = Response(head: head, body: body ?? Data())
+        if context.channel.isActive {
+            context.fireChannelRead(wrapOutboundOut(res))
+        }
+        promise.succeed(result: res)
+        state = .ready
     }
 }
 
@@ -138,7 +154,7 @@ public final class HTTPClient {
         var preHandlers = [ChannelHandler]()
         if (port == 443) {
             do {
-                let tlsConfiguration = TLSConfiguration.forClient()
+                let tlsConfiguration = TLSConfiguration.forClient(certificateVerification: .none)
                 let sslContext = try SSLContext(configuration: tlsConfiguration)
                 let tlsHandler = try OpenSSLClientHandler(context: sslContext, serverHostname: hostname)
                 preHandlers.append(tlsHandler)
