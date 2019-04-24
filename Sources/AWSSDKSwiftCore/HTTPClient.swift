@@ -16,8 +16,8 @@ import NIOFoundationCompat
 import Foundation
 
 public struct Request {
-    var head: HTTPRequestHead
-    var body: Data = Data()
+    public var head: HTTPRequestHead
+    public var body: Data = Data()
 }
 
 public struct Response {

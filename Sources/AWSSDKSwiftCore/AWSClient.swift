@@ -222,7 +222,7 @@ extension AWSClient {
         return nioRequest
     }
 
-    func createNioRequest(_ request: AWSRequest) throws -> Request {
+    public func createNioRequest(_ request: AWSRequest) throws -> Request {
         let nioRequest: Request
         switch request.httpMethod {
         case "GET":
@@ -254,7 +254,7 @@ extension AWSClient {
         )
     }
 
-    fileprivate func createAWSRequest<Input: AWSShape>(operation operationName: String, path: String, httpMethod: String, input: Input) throws -> AWSRequest {
+    public func createAWSRequest<Input: AWSShape>(operation operationName: String, path: String, httpMethod: String, input: Input) throws -> AWSRequest {
         var headers: [String: String] = [:]
         var path = path
         var urlComponents = URLComponents()
