@@ -10,7 +10,7 @@ public class XMLNode {
     var elementName: String
     var attributes: [String: String] = [:]
     var values = [String]()
-    var parent: XMLNode? = nil
+    weak var parent: XMLNode? = nil
     var children = [XMLNode]()
     
     func isElement() -> Bool {
