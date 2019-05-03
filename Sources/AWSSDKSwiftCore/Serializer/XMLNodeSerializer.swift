@@ -16,8 +16,8 @@ private func dquote(_ str: String) -> String {
     if str.first == "\"" && str.last == "\"" {
         return str
     }
-
-    return "\"\(str)\""
+    let covered = str.replacingOccurrences(of: "\"", with: "\\\"")
+    return "\"\(covered)\""
 }
 
 private func formatAsJSONValue(_ str: String) -> String {

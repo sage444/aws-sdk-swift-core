@@ -386,6 +386,7 @@ extension AWSClient {
     fileprivate func urlEncodeQueryParams(fromDictionary dict: [String:Any]) -> String? {
         var components = URLComponents()
         components.queryItems = urlQueryItems(fromDictionary: dict)
+        components.percentEncodedQuery = components.percentEncodedQuery?.replacingOccurrences(of: "+", with: "%2B")
         if components.queryItems != nil, let url = components.url {
             return url.query
         }

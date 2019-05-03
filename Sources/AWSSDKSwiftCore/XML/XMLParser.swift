@@ -45,7 +45,7 @@ public class XML2Parser: NSObject, XMLParserDelegate {
     
     public func parser(_ parser: XMLParser, foundCharacters string: String) {
         let string = string.trimmingCharacters(in: .whitespacesAndNewlines)
-        if !string.isEmpty && string != "\"" {
+        if !string.isEmpty {
             if currentNode?.values.count == 0 || currentNodeIsArray {
                 currentNode?.values.append(string)
             } else {
