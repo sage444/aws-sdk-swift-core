@@ -94,7 +94,7 @@ public struct AWSClient {
 // invoker
 extension AWSClient {
     fileprivate func invoke(_ nioRequest: Request) throws -> Response {
-        print("<<< \(nioRequest)")
+//        print("<<< \(nioRequest)")
         let client = HTTPClient(hostname: nioRequest.head.headers["Host"].first!, port: 443)
         let future = try client.connect(nioRequest)
 

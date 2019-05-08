@@ -69,7 +69,7 @@ private class HTTPClientResponseHandler: ChannelInboundHandler {
             switch state {
             case .ready:
                 state = .parsingBody(head, nil)
-                print("head >>> [\(head)]")
+//                print("head >>> [\(head)]")
                 
             case .parsingBody: promise.fail(error: HTTPClientError.malformedHead)
             }
@@ -92,9 +92,9 @@ private class HTTPClientResponseHandler: ChannelInboundHandler {
             case .ready: promise.fail(error: HTTPClientError.malformedHead)
             case .parsingBody(let head, let data):
                 success(context: ctx, head: head, body: data)
-                if let bodyString = String(data:data ?? Data(), encoding: .utf8) {
-                    print("body >>> [\(bodyString)]")
-                }
+//                if let bodyString = String(data:data ?? Data(), encoding: .utf8) {
+//                    print("body >>> [\(bodyString)]")
+//                }
             }
         }
     }
@@ -113,9 +113,10 @@ public final class HTTPClient {
     private let hostname: String
     private let port: Int
     private let eventGroup: EventLoopGroup
+    public static let eventGroup = MultiThreadedEventLoopGroup(numberOfThreads: System.coreCount)
 
     public init(url: URL,
-                eventGroup: EventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: System.coreCount)) throws {
+                eventGroup: EventLoopGroup = HTTPClient.eventGroup) throws {
         guard let scheme = url.scheme else {
             throw HTTPClientError.malformedURL
         }
@@ -133,7 +134,7 @@ public final class HTTPClient {
 
     public init(hostname: String,
                 port: Int,
-                eventGroup: EventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: System.coreCount)) {
+                eventGroup: EventLoopGroup = HTTPClient.eventGroup) {
         self.hostname = hostname
         self.port = port
         self.eventGroup = eventGroup
@@ -187,6 +188,8 @@ public final class HTTPClient {
     }
 
     public func close(_ callback: @escaping (Error?) -> Void) {
-        eventGroup.shutdownGracefully(callback)
+        callback(nil)
+//        return
+//        eventGroup.shutdownGracefully(callback)
     }
 }
