@@ -223,20 +223,21 @@ extension AWSClient {
     }
 
     public func createNioRequest(_ request: AWSRequest) throws -> Request {
-        let nioRequest: Request
-        switch request.httpMethod {
-        case "GET":
-            switch serviceProtocol.type {
-            case .restjson:
-                nioRequest = try createNIORequestWithSignedHeader(request)
-
-            default:
-                nioRequest = try createNIORequestWithSignedURL(request)
-            }
-        default:
-            nioRequest = try createNIORequestWithSignedHeader(request)
-        }
-        return nioRequest
+//        let nioRequest: Request
+//        switch request.httpMethod {
+//        case "GET":
+//            switch serviceProtocol.type {
+//            case .restjson:
+//                nioRequest = try createNIORequestWithSignedHeader(request)
+//
+//            default:
+//                nioRequest = try createNIORequestWithSignedURL(request)
+//            }
+//        default:
+//            nioRequest = try createNIORequestWithSignedHeader(request)
+//        }
+//        return nioRequest
+        return try createNIORequestWithSignedHeader(request)
     }
 
     fileprivate func createAWSRequest(operation operationName: String, path: String, httpMethod: String) -> AWSRequest {
@@ -370,6 +371,8 @@ extension AWSClient {
         prepared.sort { $0.name < $1.name }
         if prepared.count > 0 {
             urlComponents.queryItems = prepared
+        } else {
+            urlComponents.queryItems = nil
         }
         guard let url = urlComponents.url else {
             throw RequestError.invalidURL("\(endpoint)\(path)")
