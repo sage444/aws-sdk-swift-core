@@ -358,13 +358,19 @@ extension AWSClient {
         urlComponents.path = parsedPath.path
 
         if let pathQueryItems = parsedPath.queryItems {
-            for item in pathQueryItems {
+            for item in pathQueryItems { // BUG: Losing parameters without value, for example on s3 "key?uploads"
                 queryParams[item.name] = item.value
             }
         }
-
-        urlComponents.queryItems = urlQueryItems(fromDictionary: queryParams)
-
+        
+        var prepared = urlQueryItems(fromDictionary: queryParams) ?? []
+        if let pathQueryItems = parsedPath.queryItems {
+            prepared.append(contentsOf: pathQueryItems)
+        }
+        prepared.sort { $0.name < $1.name }
+        if prepared.count > 0 {
+            urlComponents.queryItems = prepared
+        }
         guard let url = urlComponents.url else {
             throw RequestError.invalidURL("\(endpoint)\(path)")
         }
@@ -417,7 +423,7 @@ extension AWSClient {
 
 // response validator
 extension AWSClient {
-    fileprivate func validate<Output: AWSShape>(operation operationName: String, response: Response) throws -> Output {
+    public func validate<Output: AWSShape>(operation operationName: String, response: Response) throws -> Output {
 
         guard (200..<300).contains(response.head.status.code) else {
             let responseBody = try validateBody(

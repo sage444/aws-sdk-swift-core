@@ -13,7 +13,7 @@ public struct AWSShapeMember {
         case structure
         case `enum`
         case map
-        case list
+        case list(flat: Bool)
         case string
         case integer
         case blob

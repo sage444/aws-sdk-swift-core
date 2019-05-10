@@ -243,10 +243,21 @@ extension Signers {
         }
 
         func canonicalRequest(url: URLComponents, headers: [String: String], method: String, bodyDigest: String) -> String {
+            let query = { () -> String in
+                guard let q = url.percentEncodedQuery else {
+                    return ""
+                }
+                if !q.contains("=") {
+                    return "\(q)="
+                }
+                
+                return q
+            }()
+            
             return [
                 method,
                 V4.awsUriEncode(url.path, encodeSlash: false),
-                url.percentEncodedQuery ?? "",
+                query,
                 "\(canonicalHeaders(headers))\n",
                 signedHeaders(headers),
                 bodyDigest

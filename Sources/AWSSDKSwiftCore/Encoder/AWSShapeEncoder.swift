@@ -32,9 +32,9 @@ struct AWSShapeEncoder {
         return XMLNodeSerializer(node: node).serializeToXML().data(using: .utf8, allowLossyConversion: false)
     }
 
-    func encodeToXMLNode(_ input: AWSShape, attributes: XMLAttribute = [:]) throws -> XMLNode {
+    func encodeToXMLNode(_ input: AWSShape, attributes: XMLAttribute = [:], locationName: String? = nil) throws -> XMLNode {
         let mirror = Mirror(reflecting: input)
-        let name = "\(mirror.subjectType)"
+        let name = locationName ?? "\(mirror.subjectType)"
         let xmlNode = XMLNode(elementName: name.upperFirst())
         if let attr = attributes.filter({ $0.key == name }).first {
             xmlNode.attributes = attr.value
@@ -55,9 +55,19 @@ struct AWSShapeEncoder {
                 node.children.append(contentsOf: cNode.children)
 
             case let v as [AWSShape]:
+                var location: String? = nil
+                var flatList: Bool = false
+                if let memberInParent = type(of: input)._members.first(where: {$0.label == label}), case .list(let flat) = memberInParent.type {
+                    location = memberInParent.location?.name
+                    flatList = flat
+                }
                 for vv in v {
-                    let cNode = try AWSShapeEncoder().encodeToXMLNode(vv)
-                    node.children.append(contentsOf: cNode.children)
+                    let cNode = try AWSShapeEncoder().encodeToXMLNode(vv, locationName: location)
+                    if flatList {
+                        xmlNode.children.append(cNode)
+                    } else {
+                        node.children.append(cNode)
+                    }
                 }
 
             default:
