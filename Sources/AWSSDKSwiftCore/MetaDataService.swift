@@ -78,7 +78,7 @@ struct MetaDataService {
     }
 
     static func request(host: String, uri: String, timeout: TimeInterval) throws -> Response {
-        let client = HTTPClient(hostname: host, port: 80)
+        let client = HTTPClient(hostname: host, port: 80, eventGroup: AWSClient.eventLoopGroup)
         let head = HTTPRequestHead(
                      version: HTTPVersion(major: 1, minor: 1),
                      method: .GET,

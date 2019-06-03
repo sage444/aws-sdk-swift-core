@@ -40,6 +40,10 @@ public struct AWSClient {
     let serviceEndpoints: [String: String]
 
     let partitionEndpoint: String?
+    
+    var credProviders: [CredentialProvider?] {
+        return [SharedCredential(), EnvironementCredential(), RuntimeCredentials()]
+    }
 
     public let middlewares: [AWSRequestMiddleware]
 
@@ -62,11 +66,13 @@ public struct AWSClient {
         }
         return "\(signer.service).\(signer.region.rawValue).amazonaws.com"
     }
+    
+    public static let eventLoopGroup = MultiThreadedEventLoopGroup(numberOfThreads: 2)
 
     public init(accessKeyId: String? = nil, secretAccessKey: String? = nil, region givenRegion: Region?, amzTarget: String? = nil, service: String, serviceProtocol: ServiceProtocol, apiVersion: String, endpoint: String? = nil, serviceEndpoints: [String: String] = [:], partitionEndpoint: String? = nil, middlewares: [AWSRequestMiddleware] = [], possibleErrorTypes: [AWSErrorType.Type]? = nil, credetialProviders: [CredentialProvider?] = [SharedCredential(), EnvironementCredential(), RuntimeCredentials()]) {
-        
-        let credential = credetialProviders.compactMap({ return $0 }).first
 
+        let credential = credetialProviders.compactMap({ return $0 }).first
+        
         let region: Region
         if let _region = givenRegion {
             region = _region
@@ -95,7 +101,7 @@ public struct AWSClient {
 extension AWSClient {
     fileprivate func invoke(_ nioRequest: Request) throws -> Response {
 //        print("<<< \(nioRequest)")
-        let client = HTTPClient(hostname: nioRequest.head.headers["Host"].first!, port: 443)
+        let client = HTTPClient(hostname: nioRequest.head.headers["Host"].first!, port: 443, eventGroup: AWSClient.eventLoopGroup)
         let future = try client.connect(nioRequest)
 
         //TODO(jmca) don't block
@@ -113,7 +119,7 @@ extension AWSClient {
     //TODO(jmca) learn how to map response to validate and return
     // a future of generic Output: AWSShape
     fileprivate func invokeAsync(_ nioRequest: Request) throws -> EventLoopFuture<Response>{
-        let client = HTTPClient(hostname: nioRequest.head.headers["Host"].first!, port: 443)
+        let client = HTTPClient(hostname: nioRequest.head.headers["Host"].first!, port: 443, eventGroup: AWSClient.eventLoopGroup)
         let future = try client.connect(nioRequest)
         future.whenComplete {
           client.close { error in
@@ -185,6 +191,10 @@ extension AWSClient {
     }
 
     func nioRequestWithSignedHeader(_ nioRequest: Request) throws -> Request {
+        if signer.credential == nil || (signer.credential?.isEmpty() ?? true) || (signer.credential?.nearExpiration() ?? true) {
+            signer.credential = credProviders.compactMap({ $0 }).filter({ !($0.isEmpty() || $0.nearExpiration()) }).first
+        }
+        
         var nioRequest = nioRequest
         // TODO avoid copying
         var headers: [String: String] = [:]

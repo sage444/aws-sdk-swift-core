@@ -74,7 +74,7 @@ private class HTTPClientResponseHandler: ChannelInboundHandler {
             switch state {
             case .ready:
                 state = .parsingBody(head, nil)
-                //  print("head >>> [\(head)]")
+//                 print("head >>> [\(head)]")
                 
             case .parsingBody: promise.fail(error: HTTPClientError.malformedHead)
             }
@@ -97,9 +97,9 @@ private class HTTPClientResponseHandler: ChannelInboundHandler {
             case .ready: promise.fail(error: HTTPClientError.malformedHead)
             case .parsingBody(let head, let data):
                 success(context: ctx, head: head, body: data)
-                // if let bodyString = String(data:data ?? Data(), encoding: .utf8) {
-                //     print("body >>> [\(bodyString)]")
-                // }
+//                if let bodyString = String(data:data ?? Data(), encoding: .utf8) {
+//                    print("body >>> [\(bodyString)]")
+//                }
             }
         }
     }
@@ -118,10 +118,9 @@ public final class HTTPClient {
     private let hostname: String
     private let port: Int
     private let eventGroup: EventLoopGroup
-    public static let eventGroup = MultiThreadedEventLoopGroup(numberOfThreads: System.coreCount)
 
     public init(url: URL,
-                eventGroup: EventLoopGroup = HTTPClient.eventGroup) throws {
+                eventGroup: EventLoopGroup ) throws {
         guard let scheme = url.scheme else {
             throw HTTPClientError.malformedURL
         }
@@ -139,7 +138,7 @@ public final class HTTPClient {
 
     public init(hostname: String,
                 port: Int,
-                eventGroup: EventLoopGroup = HTTPClient.eventGroup) {
+                eventGroup: EventLoopGroup) {
         self.hostname = hostname
         self.port = port
         self.eventGroup = eventGroup
@@ -184,12 +183,12 @@ public final class HTTPClient {
             .connect(host: hostname, port: port)
             .then { channel -> EventLoopFuture<Void> in
                 channel.write(NIOAny(HTTPClientRequestPart.head(head)), promise: nil)
-                // print("head <<< [\(head)]")
+//                print("head <<< [\(head)]")
                 var buffer = ByteBufferAllocator().buffer(capacity: body.count)
                 buffer.write(bytes: body)
-                // if let bodyString = String(data:body, encoding: .utf8) {
-                //     print("body <<< [\(bodyString)]")
-                // }
+//                if let bodyString = String(data:body, encoding: .utf8) {
+//                    print("body <<< [\(bodyString)]")
+//                }
                 channel.write(NIOAny(HTTPClientRequestPart.body(.byteBuffer(buffer))), promise: nil)
                 return channel.writeAndFlush(NIOAny(HTTPClientRequestPart.end(nil)))
         }
@@ -197,7 +196,7 @@ public final class HTTPClient {
     }
 
     public func close(_ callback: @escaping (Error?) -> Void) {
-        callback(nil)
+//        callback(nil)
 //        return
 //        eventGroup.shutdownGracefully(callback)
     }
