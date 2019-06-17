@@ -191,6 +191,9 @@ public final class HTTPClient {
 //                }
                 channel.write(NIOAny(HTTPClientRequestPart.body(.byteBuffer(buffer))), promise: nil)
                 return channel.writeAndFlush(NIOAny(HTTPClientRequestPart.end(nil)))
+            }.mapIfError { connectionError in
+                print("connection failed with error: \(connectionError)")
+                response.fail(error: connectionError)
         }
         return response.futureResult
     }
