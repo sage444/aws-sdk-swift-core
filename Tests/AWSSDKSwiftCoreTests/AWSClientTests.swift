@@ -12,7 +12,6 @@ import XCTest
 @testable import AWSSDKSwiftCore
 
 class AWSClientTests: XCTestCase {
-
     struct C: AWSShape {
         public static var members: [AWSShapeMember] = [
             AWSShapeMember(label: "value", required: true, type: .string)
@@ -23,7 +22,7 @@ class AWSClientTests: XCTestCase {
 
     struct E: AWSShape {
         public static var members: [AWSShapeMember] = [
-            AWSShapeMember(label: "Member", required: true, type: .list),
+            AWSShapeMember(label: "Member", required: true, type: .list(flat: false)),
         ]
 
         let Member = ["memberKey": "memberValue", "memberKey2": "memberValue2"]
@@ -37,7 +36,7 @@ class AWSClientTests: XCTestCase {
         public static let payloadPath: String? = "fooParams"
 
         public static var members: [AWSShapeMember] = [
-            AWSShapeMember(label: "Member", required: true, type: .list),
+            AWSShapeMember(label: "Member", required: true, type: .list(flat: false)),
             AWSShapeMember(label: "fooParams", required: false, type: .structure),
         ]
 

@@ -11,7 +11,7 @@ import XCTest
 @testable import AWSSDKSwiftCore
 
 class SerializersTests: XCTestCase {
-
+/*
     struct B: AWSShape {
         public static var members: [AWSShapeMember] = [
             AWSShapeMember(label: "a", required: true, type: .string),
@@ -144,4 +144,5 @@ class SerializersTests: XCTestCase {
             ("testSerializeToFlatDictionary", testSerializeToFlatDictionary)
         ]
     }
+ */
 }

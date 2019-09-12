@@ -1,4 +1,4 @@
-// swift-tools-version:4.1
+// swift-tools-version:5.0
 import PackageDescription
 
 let package = Package(
@@ -7,8 +7,8 @@ let package = Package(
         .library(name: "AWSSDKSwiftCore", targets: ["AWSSDKSwiftCore"])
     ],
     dependencies: [
-        .package(url: "https://github.com/apple/swift-nio.git", .upToNextMajor(from: "1.13.2")),
-        .package(url: "https://github.com/apple/swift-nio-ssl.git", .upToNextMajor(from: "1.3.2")),
+        .package(url: "https://github.com/apple/swift-nio.git", .upToNextMajor(from: "2.0.0")),
+        .package(url: "https://github.com/apple/swift-nio-ssl.git", .upToNextMajor(from: "2.0.0")),
         .package(url: "https://github.com/Yasumoto/HypertextApplicationLanguage.git", .upToNextMajor(from: "1.1.0")),
         .package(url: "https://github.com/PerfectlySoft/Perfect-INIParser.git", .upToNextMajor(from: "3.0.0")),
     ],
@@ -19,7 +19,8 @@ let package = Package(
                 "HypertextApplicationLanguage",
                 "NIO",
                 "NIOHTTP1",
-                "NIOOpenSSL",
+                "NIOTLS",
+                "NIOSSL",
                 "NIOFoundationCompat",
                 "INIParser"
             ]),

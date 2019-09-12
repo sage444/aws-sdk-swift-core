@@ -7,18 +7,18 @@
 //
 
 import Foundation
-import CNIOOpenSSL
+import CNIOBoringSSL
 
 func hmac(string: String, key: [UInt8]) -> [UInt8] {
-    let context = HMAC_CTX_new()
-    HMAC_Init_ex(context, key, Int32(key.count), EVP_sha256(), nil)
+    let context = CNIOBoringSSL_HMAC_CTX_new()
+    CNIOBoringSSL_HMAC_Init_ex(context, key, key.count, CNIOBoringSSL_EVP_sha256(), nil)
 
     let bytes = Array(string.utf8)
-    HMAC_Update(context, bytes, bytes.count)
+    CNIOBoringSSL_HMAC_Update(context, bytes, bytes.count)
     var digest = [UInt8](repeating: 0, count: Int(EVP_MAX_MD_SIZE))
     var length: UInt32 = 0
-    HMAC_Final(context, &digest, &length)
-    HMAC_CTX_free(context)
+    CNIOBoringSSL_HMAC_Final(context, &digest, &length)
+    CNIOBoringSSL_HMAC_CTX_free(context)
 
     return Array(digest[0..<Int(length)])
 }

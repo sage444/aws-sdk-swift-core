@@ -121,7 +121,7 @@ extension AWSClient {
     fileprivate func invokeAsync(_ nioRequest: Request) throws -> EventLoopFuture<Response>{
         let client = HTTPClient(hostname: nioRequest.head.headers["Host"].first!, port: 443, eventGroup: AWSClient.eventLoopGroup)
         let future = try client.connect(nioRequest)
-        future.whenComplete {
+        future.whenComplete { _ in 
           client.close { error in
               if let error = error {
                   print("Error closing connection: \(error)")
@@ -494,7 +494,7 @@ extension AWSClient {
 
         for (key, value) in response.head.headers {
             let headeParams = Output.headerParams
-            if let index = headeParams.index(where: { $0.key.lowercased() == key.description.lowercased() }) {
+            if let index = headeParams.firstIndex(where: { $0.key.lowercased() == key.description.lowercased() }) {
                 let outDicKey = headeParams[index].key
                 if let number = Double(value) {
                     outputDict[outDicKey] = number.truncatingRemainder(dividingBy: 1) == 0 ? Int(number) : number
@@ -594,13 +594,7 @@ extension AWSClient {
     }
 
     private func createError(for response: Response, withComputedBody body: Body, withRawData data: Data) -> Error {
-        let bodyDict: [String: Any]
-        if let dict = try? body.asDictionary() {
-            bodyDict = dict ?? [:]
-        } else {
-            bodyDict = [:]
-        }
-
+        let bodyDict: [String: Any] = (try? body.asDictionary()) ?? [:]
         var code: String?
         var message: String?
 

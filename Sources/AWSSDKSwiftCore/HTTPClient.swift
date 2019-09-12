@@ -11,7 +11,7 @@
 
 import NIO
 import NIOHTTP1
-import NIOOpenSSL
+import NIOSSL
 import NIOFoundationCompat
 import Foundation
 
@@ -64,7 +64,7 @@ private class HTTPClientResponseHandler: ChannelInboundHandler {
             success(context: ctx, head: head, body: body)
             return
         }
-        promise.fail(error: HTTPClientError.error(error))
+        promise.fail(HTTPClientError.error(error))
         ctx.fireErrorCaught(error)
     }
 
@@ -76,11 +76,11 @@ private class HTTPClientResponseHandler: ChannelInboundHandler {
                 state = .parsingBody(head, nil)
 //                 print("head >>> [\(head)]")
                 
-            case .parsingBody: promise.fail(error: HTTPClientError.malformedHead)
+            case .parsingBody: promise.fail(HTTPClientError.malformedHead)
             }
         case .body(var body):
             switch state {
-            case .ready: promise.fail(error: HTTPClientError.malformedBody)
+            case .ready: promise.fail(HTTPClientError.malformedBody)
             case .parsingBody(let head, let existingData):
                 let data: Data
                 if var existing = existingData {
@@ -94,7 +94,7 @@ private class HTTPClientResponseHandler: ChannelInboundHandler {
         case .end(let tailHeaders):
             assert(tailHeaders == nil, "Unexpected tail headers")
             switch state {
-            case .ready: promise.fail(error: HTTPClientError.malformedHead)
+            case .ready: promise.fail(HTTPClientError.malformedHead)
             case .parsingBody(let head, let data):
                 success(context: ctx, head: head, body: data)
 //                if let bodyString = String(data:data ?? Data(), encoding: .utf8) {
@@ -109,7 +109,7 @@ private class HTTPClientResponseHandler: ChannelInboundHandler {
         if context.channel.isActive {
             context.fireChannelRead(wrapOutboundOut(res))
         }
-        promise.succeed(result: res)
+        promise.succeed(res)
         state = .ready
     }
 }
@@ -160,40 +160,39 @@ public final class HTTPClient {
         if (port == 443) {
             do {
                 let tlsConfiguration = TLSConfiguration.forClient(certificateVerification: .none)
-                let sslContext = try SSLContext(configuration: tlsConfiguration)
-                let tlsHandler = try OpenSSLClientHandler(context: sslContext, serverHostname: hostname)
+                let sslContext = try NIOSSLContext(configuration: tlsConfiguration)
+                let tlsHandler = try NIOSSLClientHandler(context: sslContext, serverHostname: hostname)
                 preHandlers.append(tlsHandler)
             } catch {
                 print("Unable to setup TLS: \(error)")
             }
         }
-        let response: EventLoopPromise<Response> = eventGroup.next().newPromise()
-
+        let response: EventLoopPromise<Response> = eventGroup.next().makePromise()
         _ = ClientBootstrap(group: eventGroup)
             .channelOption(ChannelOptions.socket(SocketOptionLevel(SOL_SOCKET), SO_REUSEADDR), value: 1)
             .channelInitializer { channel in
                 let accumulation = HTTPClientResponseHandler(promise: response)
-                let results = preHandlers.map { channel.pipeline.add(handler: $0) }
-                return EventLoopFuture<Void>.andAll(results, eventLoop: channel.eventLoop).then {
-                    channel.pipeline.addHTTPClientHandlers().then {
-                        channel.pipeline.add(handler: accumulation)
+                let results = preHandlers.map { channel.pipeline.addHandler($0) }
+                return EventLoopFuture<Void>.andAllSucceed(results, on: channel.eventLoop).flatMap {
+                    channel.pipeline.addHTTPClientHandlers().flatMap {
+                        channel.pipeline.addHandler(accumulation)
                     }
                 }
             }
             .connect(host: hostname, port: port)
-            .then { channel -> EventLoopFuture<Void> in
+            .flatMap { channel -> EventLoopFuture<Void> in
                 channel.write(NIOAny(HTTPClientRequestPart.head(head)), promise: nil)
 //                print("head <<< [\(head)]")
                 var buffer = ByteBufferAllocator().buffer(capacity: body.count)
-                buffer.write(bytes: body)
+                buffer.writeBytes(body)
 //                if let bodyString = String(data:body, encoding: .utf8) {
 //                    print("body <<< [\(bodyString)]")
 //                }
                 channel.write(NIOAny(HTTPClientRequestPart.body(.byteBuffer(buffer))), promise: nil)
                 return channel.writeAndFlush(NIOAny(HTTPClientRequestPart.end(nil)))
-            }.mapIfError { connectionError in
+            }.whenFailure { connectionError in
                 print("connection failed with error: \(connectionError)")
-                response.fail(error: connectionError)
+                response.fail(connectionError)
         }
         return response.futureResult
     }

@@ -70,7 +70,7 @@ extension Signers {
 //            }
             
             url.query?.components(separatedBy: "&").forEach {
-                var q = $0.components(separatedBy: "=")
+                let q = $0.components(separatedBy: "=")
                 if q.count == 2 {
                     queries.append(URLQueryItem(name: q[0], value: q[1].addingPercentEncoding(withAllowedCharacters: .urlHostAllowed)))
                 } else {
@@ -79,7 +79,9 @@ extension Signers {
             }
             
             queries = queries.sorted { a, b in a.name < b.name }
-            
+            guard queries.count > 0 else {
+                return URL(string: url.absoluteString)!
+            }
             let url = URL(string: url.absoluteString.components(separatedBy: "?")[0]+"?"+queries.asStringForURL)!
 //            if let credentialForSignature = credentialForSignature {
 //                let sig = signature(
@@ -176,7 +178,7 @@ extension Signers {
 
         func signedHeaders(_ headers: [String:String]) -> String {
             var list = Array(headers.keys).map { $0.lowercased() }.sorted()
-            if let index = list.index(of: "authorization") {
+            if let index = list.firstIndex(of: "authorization") {
                 list.remove(at: index)
             }
             return list.joined(separator: ";")

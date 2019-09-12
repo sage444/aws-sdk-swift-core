@@ -64,13 +64,13 @@ class SignersV4Tests: XCTestCase {
 
     func testGetCredential() {
       let signer = Signers.V4(credential: credential, region: .apnortheast1, service: "ec2")
-      let credentialForSignature = signer.getCredential()
+      let credentialForSignature = signer.getCredential()!
       XCTAssertEqual(credentialForSignature.accessKeyId, "key")
       XCTAssertEqual(credentialForSignature.secretAccessKey, "secret")
 
       let instanceCredential1 = Credential(accessKeyId: "key", secretAccessKey: "secret", expiration: Date().addingTimeInterval(10.0 * 60.0))
       let signerOnInstance1 = Signers.V4(credential: instanceCredential1, region: .apnortheast1, service: "ec2")
-      let credentialForsignerOnInstance1 = signerOnInstance1.getCredential()
+      let credentialForsignerOnInstance1 = signerOnInstance1.getCredential()!
       XCTAssertEqual(credentialForsignerOnInstance1.accessKeyId, "key")
       XCTAssertEqual(credentialForsignerOnInstance1.secretAccessKey, "secret")
     }
