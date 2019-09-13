@@ -57,18 +57,18 @@ private class HTTPClientResponseHandler: ChannelInboundHandler {
         self.promise = promise
     }
     
-    func errorCaught(ctx: ChannelHandlerContext, error: Error) {
+    func errorCaught(context: ChannelHandlerContext, error: Error) {
         if case HTTPParserError.invalidEOFState = error, // case for HEAD request
             case let HTTPClientState.parsingBody(head, body) = state {
             // there we have only headers and EOF in place of body
-            success(context: ctx, head: head, body: body)
+            success(context: context, head: head, body: body)
             return
         }
         promise.fail(HTTPClientError.error(error))
-        ctx.fireErrorCaught(error)
+        context.fireErrorCaught(error)
     }
 
-    public func channelRead(ctx: ChannelHandlerContext, data: NIOAny) {
+    public func channelRead(context: ChannelHandlerContext, data: NIOAny) {
         switch unwrapInboundIn(data) {
         case .head(let head):
             switch state {
@@ -96,7 +96,7 @@ private class HTTPClientResponseHandler: ChannelInboundHandler {
             switch state {
             case .ready: promise.fail(HTTPClientError.malformedHead)
             case .parsingBody(let head, let data):
-                success(context: ctx, head: head, body: data)
+                success(context: context, head: head, body: data)
 //                if let bodyString = String(data:data ?? Data(), encoding: .utf8) {
 //                    print("body >>> [\(bodyString)]")
 //                }
