@@ -66,6 +66,7 @@ private class HTTPClientResponseHandler: ChannelInboundHandler {
         }
         promise.fail(HTTPClientError.error(error))
         context.fireErrorCaught(error)
+        context.close(promise: nil)
     }
 
     public func channelRead(context: ChannelHandlerContext, data: NIOAny) {
@@ -75,12 +76,15 @@ private class HTTPClientResponseHandler: ChannelInboundHandler {
             case .ready:
                 state = .parsingBody(head, nil)
 //                 print("head >>> [\(head)]")
-                
-            case .parsingBody: promise.fail(HTTPClientError.malformedHead)
+            case .parsingBody:
+                promise.fail(HTTPClientError.malformedHead)
+                context.close(promise: nil)
             }
         case .body(var body):
             switch state {
-            case .ready: promise.fail(HTTPClientError.malformedBody)
+            case .ready:
+                promise.fail(HTTPClientError.malformedBody)
+                context.close(promise: nil)
             case .parsingBody(let head, let existingData):
                 let data: Data
                 if var existing = existingData {
@@ -94,7 +98,9 @@ private class HTTPClientResponseHandler: ChannelInboundHandler {
         case .end(let tailHeaders):
             assert(tailHeaders == nil, "Unexpected tail headers")
             switch state {
-            case .ready: promise.fail(HTTPClientError.malformedHead)
+            case .ready:
+                promise.fail(HTTPClientError.malformedHead)
+                context.close(promise: nil)
             case .parsingBody(let head, let data):
                 success(context: context, head: head, body: data)
 //                if let bodyString = String(data:data ?? Data(), encoding: .utf8) {
@@ -110,6 +116,7 @@ private class HTTPClientResponseHandler: ChannelInboundHandler {
             context.fireChannelRead(wrapOutboundOut(res))
         }
         promise.succeed(res)
+        context.close(promise: nil)
         state = .ready
     }
 }
