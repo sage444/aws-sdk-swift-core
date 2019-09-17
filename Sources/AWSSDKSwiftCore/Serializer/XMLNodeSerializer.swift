@@ -23,7 +23,12 @@ private func dquote(_ str: String) -> String {
 private func formatAsJSONValue(_ str: String) -> String {
     if let number = Double(str) {
         if number.truncatingRemainder(dividingBy: 1) == 0 {
-            return Int(number).description
+            if let exactRepr = Int(exactly: number)?.description {
+                return exactRepr
+            }
+            else {
+                return str
+            }
         } else {
             return number.description
         }
