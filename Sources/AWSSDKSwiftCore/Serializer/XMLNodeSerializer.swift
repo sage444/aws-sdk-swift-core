@@ -27,7 +27,7 @@ private func formatAsJSONValue(_ str: String) -> String {
                 return exactRepr
             }
             else {
-                return str
+                return dquote(str)
             }
         } else {
             return number.description

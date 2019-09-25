@@ -7,6 +7,9 @@
 //
 
 import Foundation
+#if os(Linux)
+import FoundationXML
+#endif
 
 public enum XML2ParserError: Error {
     case failedToParse(Data)

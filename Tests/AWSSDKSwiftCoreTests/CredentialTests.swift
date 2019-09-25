@@ -37,7 +37,7 @@ class CredentialTests: XCTestCase {
             ]
         ]
         let filename = "example/file/path/credentials"
-        let parser = FakeParser(toReturn: expected)
+        let parser = FakeParser(toReturn: expected )
         do {
             // When
             let credentials = try SharedCredential(
